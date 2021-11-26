@@ -1,7 +1,9 @@
 import pandas as pd
 import yfinance as yf
 import numpy as np
-k = pd.read_csv('stockdata_fi.csv')
+k = yf.download('SPY DBE JPM MA NFLX WMT',start='2016-12-31',end='2021-09-30')
+k=k.set_axis(k.columns.map('_'.join), axis=1, inplace=False)
+
 for i in k.columns[1:]:
     logcolname = f"ln_ret_{i[10:]}"
     ord_ret = f"%ret_{i[10:]}" # Column anme for percentage returns
