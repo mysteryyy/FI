@@ -26,7 +26,7 @@ plt.savefig("ScatterPlot.jpg")
 cov_mat_cols =[i for i in k.columns if 'ln_ret' in i or 'log_returns' in i]#Extracting Columns for covariance matrix
 cov_mat = k[cov_mat_cols].cov() # covariance matrix of markets and portfolio
 info = pd.DataFrame()
-for i in cov_mat.columns[:-2]:
+for i in cov_mat.columns[:-1]:
     
     info[f"{i[7:]}_beta"]=[cov_mat.loc['ln_ret_SPY',i]/cov_mat.loc['ln_ret_SPY','ln_ret_SPY']]
 # Computing beta for portfolio returns
@@ -46,11 +46,25 @@ latexdict = dict()
 for i in per_ret1:
     y = k[i].dropna()
     x = k['%ret_SPY'].dropna()
+    x = x-0.01/250
     x = sm.add_constant(x) #Add constant for intercept
-    model = sm.OLS(y,x)
+    model = sm.OLS(y-0.01/250,x)
     res = model.fit()
     print(res.summary())
-    lat = pd.read_html(res.summary().tables[1].as_html())[0].to_latex(caption=f"{i[5:]} Beta details")
+    if i!='portfolio_returns_percentage':
+     lat = res.summary2(title=f"{i[5:]} Beta obtained from OLS").as_latex()
+    else:
+     lat = res.summary2(title=f"{i} Beta obtained from OLS").as_latex()
     latexdict[i] = lat
+lkey = list(latexdict.keys())
+
+k['residual'] = (k.portfolio_returns_percentage - 0.9285*k['%ret_SPY'])**2
+plt.clf()
+plt.plot(k.residual)
+plt.xlabel("Time")
+plt.ylabel("CAPM Residual")
+plt.savefig("residualplot.jpg")
+
+plt.show()
 
 print(return_info)
