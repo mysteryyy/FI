@@ -46,13 +46,13 @@ latexdict = dict()
 for i in per_ret1:
     y = k[i].dropna()
     x = k['%ret_SPY'].dropna()
-    x = x-0.01/250
-    x = sm.add_constant(x) #Add constant for intercept
+    x = x-0.01/250 # Subtract risk free rate
+    x = sm.add_constant(x) # Add constant for intercept
     model = sm.OLS(y-0.01/250,x)
     res = model.fit()
     print(res.summary())
     if i!='portfolio_returns_percentage':
-     lat = res.summary2(title=f"{i[5:]} Beta obtained from OLS").as_latex()
+     lat = res.summary2(title=f"{i[5:]} Beta obtained from OLS").as_latex() # Converting table to latex format
     else:
      lat = res.summary2(title=f"{i} Beta obtained from OLS").as_latex()
     latexdict[i] = lat
@@ -64,6 +64,18 @@ plt.plot(k.residual)
 plt.xlabel("Time")
 plt.ylabel("CAPM Residual")
 plt.savefig("residualplot.jpg")
+plt.clf()
+plt.plot(k["portfolio_returns_percentage"])
+plt.xlabel("Time")
+plt.ylabel("portfolio Percentage Returns")
+plt.savefig("portfolio.jpg")
+plt.clf()
+plt.plot(k["%ret_SPY"])
+plt.xlabel("Time")
+plt.ylabel("SPY Percentage Returns")
+plt.savefig("SPY.jpg")
+
+
 
 plt.show()
 

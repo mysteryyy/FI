@@ -35,6 +35,11 @@ g { color: Green }
 ## a
 ![Scatter plot of Portfolio Returns against S&P 500](ScatterPlot.jpg)
 
+![Portfolio Returns](portfolio.jpg)
+
+![S&P 500](SPY.jpg)
+
+
 We see that there seems to be a linear relationship between returns of S&P500 and the returns of the portfolio.Also, the alpha of this portfolio seems to be zero as the intercept seems to be 0.
 The code written to do the calculations can be found in appendix.
 
@@ -372,9 +377,12 @@ CAPM. For eg the risk of a company going bankrupt.
 
 From the above regression, we get R-squared as 0.787 and hence the unsystemic risk of the portfolio is $1-0.787 = 0.213$.
 
-$\textrm{Residual}_{t} = (R_t - (\beta*R_{mt} + \alpha))^{2}$
+$\textrm{Residual}_{t} = ((R_t-R_{f}) - (\beta*(R_{mt}-R_{f}) + \alpha))^{2}$
 
 where, in this case $R_{t}$ is portfolio return at time $t$ and $R_{mt}$ is the market index return at time $t$. 
+
+and $R_{f}$ is the risk free rate.
+
 \begin{figure}[h]
 \caption{Idiosyncratic Risk of Portfolio over time}
 \includegraphics{residualplot.jpg}
@@ -403,91 +411,95 @@ where, in this case $R_{t}$ is portfolio return at time $t$ and $R_{mt}$ is the 
 ```
 ## Calculating Returns and Saving Figure
 ```python
-for i in k.columns:
-    logcolname = f"ln_ret_{i[10:]}"
-    ord_ret = f"%ret_{i[10:]}" # Column name for percentage returns
-    k[logcolname] = np.log(k[i]/k[i].shift(1)) # Calculating log returns 
-    k[ord_ret] = np.exp(k[logcolname])-1 # calculating percentage returns from log returns
-print(k)
+	for i in k.columns:
+	    logcolname = f"ln_ret_{i[10:]}"
+	    ord_ret = f"%ret_{i[10:]}" # Column name for percentage returns
+	    k[logcolname] = np.log(k[i]/k[i].shift(1)) # Calculating log returns 
+	    k[ord_ret] = np.exp(k[logcolname])-1 # calculating percentage returns from log returns
+	print(k)
 # Extracting Columns Names of only stocks
-per_ret=[i for i in k.columns if "%ret" in i and 'SPY' not in i] 
-log_ret=[i for i in k.columns if "ln_ret" in i and 'SPY' not in i]
-k['portfolio_returns_percentage'] = k[per_ret].mean(axis=1) #Calculating Portfolio Returns
-k['portfolio_log_returns'] = k[log_ret].mean(axis=1 # Calculating log portfolio returns
-plt.scatter(k.portfolio_returns_percentage,k['%ret_SPY']) #Plotting Scatter Plot
-plt.xlabel("SPY % Returns")
-plt.ylabel("Portfolio % Returns")
-plt.savefig("ScatterPlot.jpg")
+```python
+	per_ret=[i for i in k.columns if "%ret" in i and 'SPY' not in i] 
+	log_ret=[i for i in k.columns if "ln_ret" in i and 'SPY' not in i]
+	k['portfolio_returns_percentage'] = k[per_ret].mean(axis=1) #Calculating Portfolio Returns
+	k['portfolio_log_returns'] = k[log_ret].mean(axis=1 # Calculating log portfolio returns
+	plt.scatter(k.portfolio_returns_percentage,k['%ret_SPY']) #Plotting Scatter Plot
+	plt.xlabel("SPY % Returns")
+	plt.ylabel("Portfolio % Returns")
+	plt.savefig("ScatterPlot.jpg")
 
 ```
 ## Calculating Means
 
 ```python
-return_info1 = pd.DataFrame() # For calculating Mean of all series
-for i in cov_mat_cols:
-    return_info1[f"{i}_mean"] = [k[i].mean()]
+	return_info1 = pd.DataFrame() # For calculating Mean of all series
+	for i in cov_mat_cols:
+	    return_info1[f"{i}_mean"] = [k[i].mean()]
 ```
 
 ## Calculating Covariance and Beta
 
-```python
 # Extracting Columns for covariance matrix
-cov_mat_cols =[i for i in k.columns if 'ln_ret' in i or 'log_returns' in i]
-cov_mat = k[cov_mat_cols].cov() # covariance matrix of markets and portfolio
-info = pd.DataFrame()
-for i in cov_mat.columns[:-1]:
-    
-    info[f"{i[7:]}_beta"]=[cov_mat.loc['ln_ret_SPY',i]/cov_mat.loc[
-    'ln_ret_SPY','ln_ret_SPY']]
+```python
+	cov_mat_cols =[i for i in k.columns if 'ln_ret' in i or 'log_returns' in i]
+	cov_mat = k[cov_mat_cols].cov() # covariance matrix of markets and portfolio
+	info = pd.DataFrame()
+	for i in cov_mat.columns[:-1]:
+	    
+	    info[f"{i[7:]}_beta"]=[cov_mat.loc['ln_ret_SPY',i]/cov_mat.loc[
+	    'ln_ret_SPY','ln_ret_SPY']]
+```
 # Computing beta for portfolio returns
-info[f"portfolio_returns_beta"]=[
-        cov_mat.loc[
-        'ln_ret_SPY','portfolio_log_returns']/cov_mat.loc['ln_ret_SPY','ln_ret_SPY']] 
-print(info)
+```python
+	info[f"portfolio_returns_beta"]=[
+		cov_mat.loc[
+		'ln_ret_SPY','portfolio_log_returns']/cov_mat.loc['ln_ret_SPY','ln_ret_SPY']] 
+	print(info)
 ```
 
 ## Calculating Annualized Mean and Standard Deviation
 
 ```python
 
-return_info = pd.dataFrame()
-return_info['portfolio_annual_mean_returns'] = [k.portfolio_log_returns.mean()*250]
-return_info['portfolio_std_returns'] = [k.portfolio_log_returns.std()*250**.5]
+	return_info = pd.dataFrame()
+	return_info['portfolio_annual_mean_returns'] = [k.portfolio_log_returns.mean()*250]
+	return_info['portfolio_std_returns'] = [k.portfolio_log_returns.std()*250**.5]
 ```
 
 ## Calculating Beta using OLS
 
 ```python
-per_ret=[i for i in k.columns if "%ret" in i and 'SPY' not in i]
-per_ret1 = per_ret + ['portfolio_returns_percentage']
-latexdict = dict()
+	per_ret=[i for i in k.columns if "%ret" in i and 'SPY' not in i]
+	per_ret1 = per_ret + ['portfolio_returns_percentage']
+	latexdict = dict()
 
-for i in per_ret1:
-    y = k[i].dropna()
-    x = k['%ret_SPY'].dropna()
-    x = x-0.01/250 # Subtract risk free rate
-    x = sm.add_constant(x) # Add constant for intercept
-    model = sm.OLS(y-0.01/250,x)
-    res = model.fit()
-    print(res.summary())
-    if i!='portfolio_returns_percentage':
-     # Converting to Latex table  
-     lat = res.summary2(title=f"{i[5:]} Beta obtained from OLS").as_latex() 
-    else:
-     lat = res.summary2(title=f"{i} Beta obtained from OLS").as_latex()
-    latexdict[i] = lat
-lkey = list(latexdict.keys())
+	for i in per_ret1:
+	    y = k[i].dropna()
+	    x = k['%ret_SPY'].dropna()
+	    x = x-0.01/250 # Subtract risk free rate
+	    x = sm.add_constant(x) # Add constant for intercept
+	    model = sm.OLS(y-0.01/250,x)
+	    res = model.fit()
+	    print(res.summary())
+	    if i!='portfolio_returns_percentage':
+	     # Converting to Latex table  
+	     lat = res.summary2(title=f"{i[5:]} Beta obtained from OLS").as_latex() 
+	    else:
+	     lat = res.summary2(title=f"{i} Beta obtained from OLS").as_latex()
+	    latexdict[i] = lat
+	lkey = list(latexdict.keys())
 ```
 ## Calculating and Plotting Idiosyncratic Risk
 ```python
-k['residual'] = (k.portfolio_returns_percentage - 0.9285*k['%ret_SPY'])**2  
-# Only beta is considered above as alpha is 0
-plt.clf()
-plt.plot(k.residual)
-plt.xlabel("Time")
-plt.ylabel("CAPM Residual")
-plt.savefig("residualplot.jpg")
+	k['residual'] = ((k.portfolio_returns_percentage-0.01/250) - 
+	0.9285*(k['%ret_SPY']-0.01/250))**2  
+	# Only beta is considered above as alpha is 0
+	plt.clf()
+	plt.plot(k.residual)
+	plt.xlabel("Time")
+	plt.ylabel("CAPM Residual")
+	plt.savefig("residualplot.jpg")
 
-plt.show()
+	plt.show()
 ```
 
