@@ -58,7 +58,8 @@ for i in per_ret1:
     latexdict[i] = lat
 lkey = list(latexdict.keys())
 
-k['residual'] = (k.portfolio_returns_percentage - 0.9285*k['%ret_SPY'])**2
+k['residual'] = (k.portfolio_returns_percentage - 0.9285*k['%ret_SPY'])**1
+print(f"unsystematic risk = {k.residual.std()}")
 plt.clf()
 plt.plot(k.residual)
 plt.xlabel("Time")
@@ -77,6 +78,5 @@ plt.savefig("SPY.jpg")
 
 
 
-plt.show()
 
 print(return_info)

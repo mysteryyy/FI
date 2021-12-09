@@ -35,9 +35,17 @@ g { color: Green }
 ## a
 ![Scatter plot of Portfolio Returns against S&P 500](ScatterPlot.jpg)
 
-![Portfolio Returns](portfolio.jpg)
+\begin{figure}[H]
+\caption{Portfolio Returns}
+\includegraphics{portfolio1.jpg}
+\end{figure}
 
-![S&P 500](SPY.jpg)
+\begin{figure}[H]
+\caption{Portfolio Returns}
+\includegraphics{portfolio1.jpg}
+\end{figure}
+
+
 
 
 We see that there seems to be a linear relationship between returns of S&P500 and the returns of the portfolio.Also, the alpha of this portfolio seems to be zero as the intercept seems to be 0.
@@ -371,22 +379,30 @@ This is roughly equivalent to the beta obtained using the covariance matrix.
 We see from the standard error and p-value results above that the $\alpha$ is 0 for each of the stocks and the portfolio.
 
 ## e
+
 Idiosyncratic Risk is the risk associated with the individual stock or investment which cannot be modelled by 
 CAPM. For eg the risk of a company going bankrupt.
 
 
-From the above regression, we get R-squared as 0.787 and hence the unsystemic risk of the portfolio is $1-0.787 = 0.213$.
-
-$\textrm{Residual}_{t} = ((R_t-R_{f}) - (\beta*(R_{mt}-R_{f}) + \alpha))^{2}$
+$\textrm{Residual}_{t} = (R_t-R_{f}) - (\beta*(R_{mt}-R_{f}) + \alpha)$
 
 where, in this case $R_{t}$ is portfolio return at time $t$ and $R_{mt}$ is the market index return at time $t$. 
 
 and $R_{f}$ is the risk free rate.
 
-\begin{figure}[h]
+Unsystematic Risk = $\sigma(\textrm{Residual}_{t})=0.0058$
+
+Standard Deviation of residual is our unsystematic risk of the stock.
+
+\begin{figure}[H]
 \caption{Idiosyncratic Risk of Portfolio over time}
 \includegraphics{residualplot.jpg}
 \end{figure}
+
+
+Performing the Durbin-Watson test on the residual gives us a Durbin-Watson test statistics value of 2.0279 which is very close to 2 indicating no autocorrelation in the residuals.
+
+We perform White's Test on the residuals to test for heteroskedasticity and we get a  test statistics of 84.2 and p-value of $5.1278\times10^{-19}$ which is way below the significance value of 0.05, which means that there is heteroskedasticity in the residuals and the variance is not constant and it changes over time.
 
 # Appendix(Python Code)
 
@@ -396,6 +412,8 @@ and $R_{f}$ is the risk free rate.
    import pandas as pd
    import os
    import statsmodels.api as sm
+   import statsmodels
+   from statstmodels import stats
    import yfinance as yf
    import numpy as np
    import matplotlib.pyplot as plt
@@ -415,14 +433,18 @@ and $R_{f}$ is the risk free rate.
 	    logcolname = f"ln_ret_{i[10:]}"
 	    ord_ret = f"%ret_{i[10:]}" # Column name for percentage returns
 	    k[logcolname] = np.log(k[i]/k[i].shift(1)) # Calculating log returns 
-	    k[ord_ret] = np.exp(k[logcolname])-1 # calculating percentage returns from log returns
+            # calculating percentage returns from log returns
+	    k[ord_ret] = np.exp(k[logcolname])-1 
 	print(k)
-# Extracting Columns Names of only stocks
+```
+## Extracting Columns Names of only stocks
 ```python
 	per_ret=[i for i in k.columns if "%ret" in i and 'SPY' not in i] 
 	log_ret=[i for i in k.columns if "ln_ret" in i and 'SPY' not in i]
-	k['portfolio_returns_percentage'] = k[per_ret].mean(axis=1) #Calculating Portfolio Returns
-	k['portfolio_log_returns'] = k[log_ret].mean(axis=1 # Calculating log portfolio returns
+        # Calculating Portfolio Returns
+	k['portfolio_returns_percentage'] = k[per_ret].mean(axis=1)
+        # Calculating log portfolio returns
+	k['portfolio_log_returns'] = k[log_ret].mean(axis=1 
 	plt.scatter(k.portfolio_returns_percentage,k['%ret_SPY']) #Plotting Scatter Plot
 	plt.xlabel("SPY % Returns")
 	plt.ylabel("Portfolio % Returns")
@@ -439,8 +461,8 @@ and $R_{f}$ is the risk free rate.
 
 ## Calculating Covariance and Beta
 
-# Extracting Columns for covariance matrix
 ```python
+        # Extracting Columns for covariance matrix
 	cov_mat_cols =[i for i in k.columns if 'ln_ret' in i or 'log_returns' in i]
 	cov_mat = k[cov_mat_cols].cov() # covariance matrix of markets and portfolio
 	info = pd.DataFrame()
@@ -449,7 +471,7 @@ and $R_{f}$ is the risk free rate.
 	    info[f"{i[7:]}_beta"]=[cov_mat.loc['ln_ret_SPY',i]/cov_mat.loc[
 	    'ln_ret_SPY','ln_ret_SPY']]
 ```
-# Computing beta for portfolio returns
+## Computing beta for portfolio returns
 ```python
 	info[f"portfolio_returns_beta"]=[
 		cov_mat.loc[
@@ -492,7 +514,7 @@ and $R_{f}$ is the risk free rate.
 ## Calculating and Plotting Idiosyncratic Risk
 ```python
 	k['residual'] = ((k.portfolio_returns_percentage-0.01/250) - 
-	0.9285*(k['%ret_SPY']-0.01/250))**2  
+	0.9285*(k['%ret_SPY']-0.01/250))**1  
 	# Only beta is considered above as alpha is 0
 	plt.clf()
 	plt.plot(k.residual)
@@ -503,3 +525,8 @@ and $R_{f}$ is the risk free rate.
 	plt.show()
 ```
 
+## White's Test for Heteroskedasticity
+
+```python
+   statsmodels.stats.diagnostic.het_white(res.resid,res.model.exog)
+```
